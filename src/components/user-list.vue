@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import type { PropType } from 'vue'
+import type { User } from '../types.d'
+
 defineProps({
   users: {
-    type: Array,
+    type: Array as PropType<User[]>,
     required: true,
   },
   colored: {
@@ -9,8 +12,9 @@ defineProps({
   },
 })
 </script>
+
 <template>
-  <table :role="colored ? 'grid' : ''">
+  <table :role="colored ? 'grid' : 'table'">
     <thead>
       <tr>
         <th scope="col">Picture</th>
@@ -38,5 +42,3 @@ defineProps({
     </tbody>
   </table>
 </template>
-
-<style></style>

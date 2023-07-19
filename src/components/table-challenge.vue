@@ -1,9 +1,110 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+
+import UserList from './user-list.vue'
+
+const users = ref([])
+const defaultUsers = ref([])
+const isLoading = ref(false)
+const filter = ref('')
+const colored = ref(false)
+const sorted = ref(false)
+const filteredUsers = computed(() => {
+  if (!filter.value) {
+    return users.value
+  }
+
+  return users.value.filter(user =>
+    user.location.country.toLowerCase().includes(filter.value.toLowerCase())
+  )
+})
+const sortedUsers = computed(() => {
+  if (!sorted.value) {
+    return filteredUsers.value
+  }
+
+  return filteredUsers.value.toSorted((a, b) =>
+    a.location.country.localeCompare(b.location.country)
+  )
+})
+
+isLoading.value = true
+fetchUsers().then(results => {
+  users.value = results
+  defaultUsers.value = results
+  isLoading.value = false
+})
+
+async function fetchUsers() {
+  const response = await fetch('https://randomuser.me/api/?results=10').then(
+    response => response.json()
+  )
+  const results = response.results
+  return results
+}
+
+function deleteUser(uuid) {
+  users.value = users.value.filter(user => user.login.uuid !== uuid)
+}
+
+function resetUsers() {
+  users.value = defaultUsers.value
+}
+</script>
 
 <template>
   <div>
-    <h1 class="bg-green-200 text-center text-4xl font-bold text-gray-900">
-      Table
-    </h1>
+    <h1>Users</h1>
+
+    <header class="grid">
+      <label for="switch">
+        <input
+          type="checkbox"
+          id="switch"
+          name="switch"
+          role="switch"
+          v-model="colored"
+        />
+        Colored
+      </label>
+
+      <label for="switch">
+        <input
+          type="checkbox"
+          id="switch"
+          name="switch"
+          role="switch"
+          v-model="sorted"
+        />
+        Sorted by country
+      </label>
+
+      <button @click="resetUsers">Reset</button>
+
+      <input
+        type="text"
+        id="filter"
+        v-model="filter"
+        placeholder="Filter by..."
+      />
+    </header>
+
+    <main :aria-busy="isLoading">
+      <user-list
+        v-if="users.length"
+        :users="sortedUsers"
+        :colored="colored"
+        @delete-user="deleteUser"
+      ></user-list>
+    </main>
   </div>
 </template>
+
+<style>
+header {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  align-items: center;
+}
+</style>

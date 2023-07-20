@@ -1,27 +1,31 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, reactive } from 'vue'
 
 import UserList from './user-list.vue'
 
 import type { User } from '../types.d'
 
-const users = ref<User[]>([])
-const defaultUsers = ref<User[]>([])
-const isLoading = ref(false)
-const filter = ref('')
-const colored = ref(false)
-const sorted = ref(false)
+const state = reactive({
+  users: [] as User[],
+  defaultUsers: [] as User[],
+  isLoading: false,
+  filter: '',
+  colored: false,
+  sorted: false,
+})
+
 const filteredUsers = computed(() => {
-  if (!filter.value) {
-    return users.value
+  if (!state.filter) {
+    return state.users
   }
 
-  return users.value.filter(user =>
-    user.location.country.toLowerCase().includes(filter.value.toLowerCase())
+  return state.users.filter(user =>
+    user.location.country.toLowerCase().includes(state.filter.toLowerCase())
   )
 })
+
 const sortedUsers = computed(() => {
-  if (!sorted.value) {
+  if (!state.sorted) {
     return filteredUsers.value
   }
 
@@ -30,29 +34,24 @@ const sortedUsers = computed(() => {
   )
 })
 
-isLoading.value = true
-fetchUsers().then(results => {
-  // console.log(results)
-  users.value = results
-  defaultUsers.value = results
-  isLoading.value = false
-})
-
 async function fetchUsers() {
-  const response = await fetch('https://randomuser.me/api/?results=100').then(
-    response => response.json()
-  )
-  const results = response.results
-  return results
+  state.isLoading = true
+  const response = await fetch('https://randomuser.me/api/?results=100')
+  const data = await response.json()
+  state.users = data.results
+  state.defaultUsers = data.results
+  state.isLoading = false
 }
 
 function deleteUser(uuid: string) {
-  users.value = users.value.filter(user => user.login.uuid !== uuid)
+  state.users = state.users.filter(user => user.login.uuid !== uuid)
 }
 
 function resetUsers() {
-  users.value = defaultUsers.value
+  state.users = state.defaultUsers
 }
+
+onMounted(fetchUsers)
 </script>
 
 <template>
@@ -62,7 +61,7 @@ function resetUsers() {
     <header class="grid">
       <label for="colored">
         <input
-          v-model="colored"
+          v-model="state.colored"
           type="checkbox"
           id="colored"
           name="colored"
@@ -77,7 +76,7 @@ function resetUsers() {
           id="sorted"
           name="sorted"
           role="switch"
-          v-model="sorted"
+          v-model="state.sorted"
         />
         Sorted by country
       </label>
@@ -87,16 +86,16 @@ function resetUsers() {
       <input
         type="text"
         id="filter"
-        v-model="filter"
+        v-model="state.filter"
         placeholder="Filter by..."
       />
     </header>
 
-    <main :aria-busy="isLoading">
+    <main :aria-busy="state.isLoading">
       <user-list
-        v-if="users.length"
+        v-if="state.users.length"
         :users="sortedUsers"
-        :colored="colored"
+        :colored="state.colored"
         @delete-user="deleteUser"
       ></user-list>
     </main>

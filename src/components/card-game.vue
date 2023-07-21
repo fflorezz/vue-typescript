@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { reactive, watchEffect } from 'vue'
 
+import { shuffle } from 'lodash'
+
 type Card = {
   id: number
   content: string
@@ -8,32 +10,7 @@ type Card = {
   matched: boolean
 }
 
-const cards: Card[] = reactive([
-  {
-    id: 1,
-    content: '🐶',
-    flipped: false,
-    matched: false,
-  },
-  {
-    id: 2,
-    content: '🐱',
-    flipped: false,
-    matched: false,
-  },
-  {
-    id: 3,
-    content: '🐶',
-    flipped: false,
-    matched: false,
-  },
-  {
-    id: 4,
-    content: '🐱',
-    flipped: false,
-    matched: false,
-  },
-])
+const cards: Card[] = generateCards()
 
 watchEffect(() => {
   const flippedCards = cards.filter(card => card.flipped && !card.matched)
@@ -70,12 +47,32 @@ function flipCard(card: Card) {
   }
   card.flipped = !card.flipped
 }
+
+function generateCards() {
+  const emojis = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊']
+  const cards = emojis.flatMap(emoji => [
+    {
+      id: Math.random(),
+      content: emoji,
+      flipped: false,
+      matched: false,
+    },
+    {
+      id: Math.random(),
+      content: emoji,
+      flipped: false,
+      matched: false,
+    },
+  ])
+
+  return reactive(shuffle(cards))
+}
 </script>
 
 <template>
   <div class="container">
     <h1>Card Game</h1>
-    <div class="grid">
+    <div class="cards-container">
       <div
         v-for="card in cards"
         :key="card.id"
@@ -93,9 +90,18 @@ function flipCard(card: Card) {
 </template>
 
 <style scoped>
+.cards-container {
+  display: grid;
+  row-gap: 20px;
+  column-gap: 20px;
+  grid-template-columns: repeat(4, 100px);
+  grid-template-rows: repeat(3, 100px);
+}
 .card {
   position: relative;
+  cursor: pointer;
 }
+
 .back,
 .front {
   width: 100px;
@@ -105,10 +111,14 @@ function flipCard(card: Card) {
   display: flex;
   justify-content: center;
   align-items: center;
-  cursor: pointer;
+
   transition: transform 0.3s ease-in-out;
   position: absolute;
   backface-visibility: hidden;
+}
+.card.matched {
+  opacity: 0.5;
+  cursor: default;
 }
 .card.flipped .front {
   transform: rotateY(-0.5turn);
@@ -116,7 +126,11 @@ function flipCard(card: Card) {
 .card.flipped .back {
   transform: rotateY(0turn);
 }
-.card .back {
+.back {
   transform: rotateY(0.5turn);
+}
+
+.front {
+  background-color: salmon;
 }
 </style>

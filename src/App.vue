@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import TableChallenge from './components/table-challenge.vue'
+import CardGame from './components/card-game.vue'
 </script>
 
 <template>
   <div class="container">
-    <table-challenge />
+    <card-game />
   </div>
 </template>

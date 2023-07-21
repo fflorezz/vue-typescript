@@ -1,25 +1,30 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive } from 'vue'
-
+import { computed, reactive, watch } from 'vue'
 import UserList from './user-list.vue'
-
 import type { User } from '../types.d'
+import useFetchUsers from '../hooks/useFetchUsers'
+
+const { users, isLoading, error, isSuccessful } = useFetchUsers()
 
 const state = reactive({
-  users: [] as User[],
   defaultUsers: [] as User[],
-  isLoading: false,
   filter: '',
   colored: false,
   sorted: false,
 })
 
+watch(isSuccessful, () => {
+  if (isSuccessful.value) {
+    state.defaultUsers = users.value
+  }
+})
+
 const filteredUsers = computed(() => {
   if (!state.filter) {
-    return state.users
+    return users.value
   }
 
-  return state.users.filter(user =>
+  return users.value.filter(user =>
     user.location.country.toLowerCase().includes(state.filter.toLowerCase())
   )
 })
@@ -34,24 +39,13 @@ const sortedUsers = computed(() => {
   )
 })
 
-async function fetchUsers() {
-  state.isLoading = true
-  const response = await fetch('https://randomuser.me/api/?results=100')
-  const data = await response.json()
-  state.users = data.results
-  state.defaultUsers = data.results
-  state.isLoading = false
-}
-
 function deleteUser(uuid: string) {
-  state.users = state.users.filter(user => user.login.uuid !== uuid)
+  users.value = users.value.filter(user => user.login.uuid !== uuid)
 }
 
 function resetUsers() {
-  state.users = state.defaultUsers
+  users.value = state.defaultUsers
 }
-
-onMounted(fetchUsers)
 </script>
 
 <template>
@@ -91,9 +85,11 @@ onMounted(fetchUsers)
       />
     </header>
 
-    <main :aria-busy="state.isLoading">
+    <p v-if="error">{{ error.message }}</p>
+
+    <main :aria-busy="isLoading">
       <user-list
-        v-if="state.users.length"
+        v-if="users.length"
         :users="sortedUsers"
         :colored="state.colored"
         @delete-user="deleteUser"

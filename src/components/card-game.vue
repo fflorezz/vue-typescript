@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { reactive, watchEffect } from 'vue'
 
-const cards = reactive([
+type Card = {
+  id: number
+  content: string
+  flipped: boolean
+  matched: boolean
+}
+
+const cards: Card[] = reactive([
   {
     id: 1,
     content: '🐶',
@@ -36,7 +43,7 @@ watchEffect(() => {
   }
 })
 
-function compareCards(cards) {
+function compareCards(cards: Card[]) {
   const matched = cards[0].content === cards[1].content
 
   if (matched) {
@@ -47,17 +54,17 @@ function compareCards(cards) {
   unflipCards(cards)
 }
 
-function setMatchedCards(cards) {
+function setMatchedCards(cards: Card[]) {
   cards.forEach(card => (card.matched = true))
 }
 
-function unflipCards(cards) {
+function unflipCards(cards: Card[]) {
   setTimeout(() => {
     cards.forEach(card => (card.flipped = false))
   }, 1000)
 }
 
-function flipCard(card) {
+function flipCard(card: Card) {
   if (card.matched) {
     return
   }

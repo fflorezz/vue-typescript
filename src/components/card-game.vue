@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, watchEffect } from 'vue'
+import { reactive, watchEffect, ref, onMounted, watch } from 'vue'
 
 import { shuffle } from 'lodash'
 
@@ -10,46 +10,95 @@ type Card = {
   matched: boolean
 }
 
-const cards: Card[] = generateCards()
+const UNFLIP_DELAY_MS = 1000
+const GRID_OPTIONS = [2, 4, 6]
+const unfliping = ref(false)
+const cards = ref<Card[]>([])
+const gridOption = ref(GRID_OPTIONS[0])
 
-watchEffect(() => {
-  const flippedCards = cards.filter(card => card.flipped && !card.matched)
-
-  if (flippedCards.length === 2) {
-    compareCards(flippedCards)
-  }
+onMounted(() => {
+  newGame()
 })
 
-function compareCards(cards: Card[]) {
-  const matched = cards[0].content === cards[1].content
+watch(gridOption, () => {
+  newGame()
+})
 
-  if (matched) {
-    setMatchedCards(cards)
-    return
+watchEffect(() => {
+  const flippedCards = cards.value.filter(card => card.flipped && !card.matched)
+
+  if (flippedCards.length === 2) {
+    const [firstCard, secondCard] = flippedCards
+
+    if (firstCard.content === secondCard.content) {
+      setMatchedCards(flippedCards)
+      if (firstCard.content === '🦄') {
+        setAllVisible()
+      }
+      return
+    }
+
+    unflipCards(flippedCards)
   }
-
-  unflipCards(cards)
-}
+})
 
 function setMatchedCards(cards: Card[]) {
   cards.forEach(card => (card.matched = true))
 }
 
 function unflipCards(cards: Card[]) {
+  unfliping.value = true
   setTimeout(() => {
     cards.forEach(card => (card.flipped = false))
-  }, 1000)
+    unfliping.value = false
+  }, UNFLIP_DELAY_MS)
+}
+
+function setAllVisible() {
+  const enableCards = cards.value.filter(card => !card.matched)
+
+  enableCards.forEach(card => {
+    if (!card.matched) {
+      card.flipped = true
+    }
+  })
+
+  unflipCards(enableCards)
 }
 
 function flipCard(card: Card) {
-  if (card.matched) {
+  if (card.matched || unfliping.value) {
     return
   }
   card.flipped = !card.flipped
 }
 
+function newGame() {
+  cards.value = generateCards()
+}
+
 function generateCards() {
-  const emojis = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊']
+  const emojis = [
+    '🦄',
+    '🐶',
+    '🐱',
+    '🐭',
+    '🐹',
+    '🐰',
+    '🦊',
+    '🐼',
+    '🐮',
+    '🐞',
+    '🐷',
+    '🐸',
+    '🐵',
+    '🐔',
+    '🐧',
+    '🐦',
+    '🐤',
+    '🐣',
+  ].slice(0, (gridOption.value * gridOption.value) / 2)
+
   const cards = emojis.flatMap(emoji => [
     {
       id: Math.random(),
@@ -72,7 +121,13 @@ function generateCards() {
 <template>
   <div class="container">
     <h1>Card Game</h1>
-    <div class="cards-container">
+    <div
+      class="cards-container"
+      :style="{
+        'grid-template-columns': `repeat(${gridOption}, 100px)`,
+        'grid-template-rows': `repeat(${gridOption}, 100px)`,
+      }"
+    >
       <div
         v-for="card in cards"
         :key="card.id"
@@ -86,6 +141,14 @@ function generateCards() {
         <div class="front"></div>
       </div>
     </div>
+    <div class="options">
+      <button @click="newGame" class="new-game-button">New Game</button>
+      <select v-model="gridOption">
+        <option v-for="option in GRID_OPTIONS" :value="option">
+          {{ option }}x{{ option }}
+        </option>
+      </select>
+    </div>
   </div>
 </template>
 
@@ -94,14 +157,13 @@ function generateCards() {
   display: grid;
   row-gap: 20px;
   column-gap: 20px;
-  grid-template-columns: repeat(4, 100px);
-  grid-template-rows: repeat(3, 100px);
+  grid-template-columns: repeat(5, 100px);
+  grid-template-rows: repeat(4, 100px);
 }
 .card {
   position: relative;
   cursor: pointer;
 }
-
 .back,
 .front {
   width: 100px;
@@ -129,8 +191,19 @@ function generateCards() {
 .back {
   transform: rotateY(0.5turn);
 }
-
 .front {
   background-color: salmon;
+}
+.options {
+  margin-top: 24px;
+  gap: 20px;
+  display: flex;
+  align-items: center;
+}
+.new-game-button {
+  width: 200px;
+}
+select {
+  width: 200px;
 }
 </style>
